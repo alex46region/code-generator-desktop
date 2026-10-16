@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CODE GENERATOR // Logistic Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <script>
+    (function() {
+      const localScript = document.createElement('script');
+      localScript.src = 'bwip-js.js';
+      localScript.onerror = function() {
+        console.warn('Локальный bwip-js.js не найден. Подключаем резервный CDN...');
+        const cdnScript = document.createElement('script');
+        cdnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/bwip-js/3.0.4/bwip-js-min.js';
+        cdnScript.onload = () => console.log('Резервная библиотека bwip-js успешно подключена с CDN.');
+        cdnScript.onerror = () => console.error('Не удалось загрузить bwip-js ни локально, ни через CDN.');
+        document.head.appendChild(cdnScript);
+      };
+      document.head.appendChild(localScript);
+    })();
+  </script>
+
+  <style>
+    :root {
+      --bg-base: #0a0d14;
+      --bg-surface: #111622;
+      --bg-card: rgba(19, 26, 38, 0.7);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: #00f2fe;
+      --accent: #00f2fe;
+      --accent-glow: rgba(0, 242, 254, 0.35);
+      --accent-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      --text-main: #f3f6fa;
+      --text-muted: #8492a6;
+      --danger: #ff4757;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: radial-gradient(circle at 50% -20%, #152238 0%, var(--bg-base) 80%);
+      color: var(--text-main);
+      font-family: 'Space Grotesk', sans-serif;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.5;
+    }
+
+    .app-wrapper {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(0, 242, 254, 0.08);
+      border: 1px solid rgba(0, 242, 254, 0.25);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+
+    .header-badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+      text-align: center;
+      background: linear-gradient(180deg, #ffffff 30%, #9bb4cc 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .mode-switch {
+      display: flex;
+      width: 100%;
+      background: rgba(14, 20, 31, 0.8);
+      padding: 5px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 20px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mode-btn:hover {
+      color: #fff;
+    }
+
+    .mode-btn.active {
+      background: var(--accent-grad);
+      color: #050b14;
+      font-weight: 700;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .glass-card {
+      width: 100%;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .toggle-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .toggle-bar span {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .custom-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      display: inline-block;
+    }
+
+    .custom-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 34px;
+      cursor: pointer;
+      transition: 0.3s;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      border-radius: 50%;
+      transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .custom-switch input:checked + .slider {
+      background: var(--accent);
+    }
+
+    .custom-switch input:checked + .slider:before {
+      transform: translateX(22px);
+      background-color: #050b14;
+    }
+
+    .code-name, .input-group {
+      width: 100%;
+      margin-bottom: 14px;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      background: rgba(10, 14, 23, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      padding: 11px 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-primary {
+      background: var(--accent-grad);
+      color: #050b14;
+      border: none;
+      font-weight: 700;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px var(--accent-glow);
+      background: var(--accent-grad);
+    }
+
+    .btn-danger {
+      border-color: rgba(255, 71, 87, 0.3);
+      color: #ff6b81;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 71, 87, 0.15);
+      border-color: var(--danger);
+      color: #fff;
+    }
+
+    .actions-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .batch-mode {
+      display: none;
+      width: 100%;
+    }
+
+    .batch-mode.active {
+      display: block;
+    }
+
+    .batch-quantity {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .batch-quantity label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .batch-quantity input {
+      width: 90px;
+    }
+
+    .batch-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    .batch-item input {
+      flex: 1;
+    }
+
+    .batch-file-upload {
+      text-align: center;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border-subtle);
+    }
+
+    .batch-file-upload input[type="file"] {
+      display: none;
+    }
+
+    .advanced-section {
+      width: 100%;
+      background: rgba(14, 20, 31, 0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .advanced-toggle {
+      padding: 14px 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .advanced-toggle:hover {
+      color: var(--accent);
+    }
+
+    .advanced-toggle::after {
+      content: "▼";
+      font-size: 0.75rem;
+      transition: transform 0.25s;
+    }
+
+    .advanced-toggle.collapsed::after {
+      transform: rotate(-90deg);
+    }
+
+    .advanced-content {
+      padding: 16px 18px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    #qrcode-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .code-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .code-title {
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    .code-image {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      margin-bottom: 12px;
+    }
+
+    .code-image img {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+    }
+
+    .code-text {
+      color: #cbd5e1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      width: 100%;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(14, 20, 31, 0.95);
+      color: var(--accent);
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2000;
+    }
+
+    .notification.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .hint {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 6px;
+      text-align: center;
+      display: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 14, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      z-index: 1500;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-card {
+      background: #111622;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 26px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px var(--accent-glow);
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-card h3 {
+      font-size: 1.25rem;
+      color: #fff;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .modal-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 18px;
+    }
+
+    .modal-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div class="header-badge">Logistics Terminal</div>
+    <h1>CODE GENERATOR</h1>
+
+    <div class="mode-switch">
+      <button class="mode-btn" data-mode="qrcode">QR CODE</button>
+      <button class="mode-btn active" data-mode="datamatrix">DATA MATRIX</button>
+      <button class="mode-btn" data-mode="gs1-128">EAN-128 (GS1)</button>
+    </div>
+
+    <div class="glass-card">
+      <div class="toggle-bar">
+        <span>Пакетная генерация</span>
+        <label class="custom-switch">
+          <input type="checkbox" id="batch-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="code-name" id="single-code-name">
+        <input type="text" id="single-code-name-input" placeholder="Название для кода (опционально)">
+      </div>
+
+      <div class="code-name hidden" id="batch-code-name">
+        <input type="text" id="batch-code-name-input" placeholder="Единое название для всех кодов">
+      </div>
+
+      <div class="input-group">
+        <input type="text" id="text-input" placeholder="Введите текст или данные кода">
+        <div class="hint" id="gs1-hint">Пример: 01046006820232031125093021075012791</div>
+      </div>
+
+      <div class="batch-mode" id="batch-mode">
+        <div class="batch-quantity">
+          <label for="batch-quantity">Количество строк:</label>
+          <input type="number" id="batch-quantity" min="1" value="1">
+        </div>
+        <div class="batch-items" id="batch-items"></div>
+        <div class="batch-actions">
+          <button class="btn" onclick="addBatchItem()">+ Добавить строку</button>
+        </div>
+        <div class="batch-file-upload">
+          <label class="btn">
+            📂 Загрузить TXT / CSV
+            <input type="file" id="batch-file-input" accept=".txt,.csv">
+          </label>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
+            Структура: <code>код|название</code>
+          </div>
+          <a href="data:text/plain;charset=utf-8,ABC123%7CTovar%20A%0ADEF456%0AGHI789%7CPosylka%20%233" 
+             download="example-codes.txt"
+             style="font-size: 0.8rem; color: var(--accent); text-decoration: none; margin-top: 4px; display: inline-block;">
+            Скачать шаблон
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-container">
+      <button class="btn btn-primary" onclick="generateCode()" id="generate-btn">СГЕНЕРИРОВАТЬ</button>
+      <button class="btn hidden" onclick="openSaveModal()" id="save-session-btn">💾 СОХРАНИТЬ ДАННЫЕ</button>
+      <label class="btn" id="load-session-btn" title="Загрузить файл данных .json">
+        📁 ЗАГРУЗИТЬ СЕССИЮ
+        <input type="file" id="load-session-input" accept=".json" style="display: none;">
+      </label>
+      <button class="btn" onclick="printCode()" id="print-btn" disabled>ПЕЧАТЬ PDF</button>
+    </div>
+
+    <div class="advanced-section">
+      <button class="advanced-toggle collapsed" id="advanced-toggle">
+        Параметры термоэтикетки & Экспорт
+      </button>
+      <div class="advanced-content hidden" id="advanced-content">
+        <div class="code-name">
+          <label style="display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.85rem;">
+            Формат термоэтикетки (мм) — Ш × В:
+          </label>
+          <select id="label-size-preset" style="margin-bottom: 8px;">
+            <option value="custom">Ввести произвольный размер</option>
+            <option value="57x32">57 × 32 мм (малая)</option>
+            <option value="70x30">70 × 30 мм</option>
+            <option value="89x50">89 × 50 мм</option>
+            <option value="100x50">100 × 50 мм (средняя)</option>
+            <option value="102x152">102 × 152 мм (большая)</option>
+          </select>
+          <div id="custom-size-inputs" style="display: none; display: flex; gap: 8px; margin-top: 6px;">
+            <input type="number" id="label-width" placeholder="Ширина" min="10" max="200" value="100">
+            <input type="number" id="label-height" placeholder="Высота" min="10" max="300" value="50">
+          </div>
+        </div>
+
+        <div class="actions-container" style="margin: 10px 0 0 0;">
+          <button class="btn" onclick="printLabel()" id="label-print-btn" disabled>Печать этикетки</button>
+          <button class="btn" onclick="downloadPNG()" id="download-btn" disabled>Скачать PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="qrcode-container"></div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <div class="modal-overlay" id="save-modal">
+    <div class="modal-card">
+      <h3>Сохранение резервной копии</h3>
+      <p>Файл сохранит все введённые данные, выбранный тип кодов и настройки размеров.</p>
+      <input type="text" id="save-filename-input" placeholder="Имя файла">
+      <div class="modal-card-actions">
+        <button class="btn" onclick="closeSaveModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="confirmSaveToFile()">Сохранить .JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'datamatrix';
+    let isBatchMode = false;
+
+    function ensureBwipLoaded() {
+      return new Promise((resolve, reject) => {
+        if (typeof bwipjs !== 'undefined' && bwipjs.toCanvas) {
+          return resolve();
+        }
+
+        const cdnScript = document.createElement('script');
+        cdnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/bwip-js/3.0.4/bwip-js-min.js';
+        cdnScript.onload = () => {
+          if (typeof bwipjs !== 'undefined' && bwipjs.toCanvas) {
+            resolve();
+          } else {
+            reject(new Error('Библиотека не инициализирована'));
+          }
+        };
+        cdnScript.onerror = () => reject(new Error('Не удалось загрузить bwip-js с CDN'));
+        document.head.appendChild(cdnScript);
+      });
+    }
+
+    function setMode(mode) {
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        if (b.dataset.mode === mode) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+      currentMode = mode;
+      const hint = document.getElementById('gs1-hint');
+      if (currentMode === 'gs1-128') {
+        hint.style.display = 'block';
+      } else {
+        hint.style.display = 'none';
+      }
+    }
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setMode(btn.dataset.mode);
+      });
+    });
+
+    document.getElementById('batch-toggle').addEventListener('change', function() {
+      applyBatchMode(this.checked);
+    });
+
+    function applyBatchMode(active) {
+      isBatchMode = active;
+      document.getElementById('batch-toggle').checked = active;
+      document.getElementById('single-code-name').classList.toggle('hidden', active);
+      document.getElementById('batch-code-name').classList.toggle('hidden', !active);
+      document.getElementById('batch-mode').classList.toggle('active', active);
+      document.getElementById('text-input').style.display = active ? 'none' : 'block';
+      document.getElementById('generate-btn').textContent = active ? 'СГЕНЕРИРОВАТЬ ВСЕ' : 'СГЕНЕРИРОВАТЬ';
+      
+      if (active && document.querySelectorAll('.batch-item').length === 0) {
+        updateBatchItems();
+      }
+    }
+
+    document.getElementById('batch-quantity').addEventListener('input', function() {
+      let value = parseInt(this.value) || 1;
+      if (value < 1) value = 1;
+      this.value = value;
+      updateBatchItems();
+    });
+
+    document.getElementById('advanced-toggle').addEventListener('click', function() {
+      const content = document.getElementById('advanced-content');
+      const isCollapsed = content.classList.contains('hidden');
+      content.classList.toggle('hidden', !isCollapsed);
+      this.classList.toggle('collapsed', !isCollapsed);
+    });
+
+    document.getElementById('label-size-preset').addEventListener('change', function() {
+      const customInputs = document.getElementById('custom-size-inputs');
+      if (this.value === 'custom') {
+        customInputs.style.display = 'flex';
+      } else {
+        customInputs.style.display = 'none';
+        const [w, h] = this.value.split('x').map(Number);
+        document.getElementById('label-width').value = w;
+        document.getElementById('label-height').value = h;
+      }
+    });
+
+    document.getElementById('batch-file-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const content = event.target.result;
+        const lines = content.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+
+        document.getElementById('batch-items').innerHTML = '';
+        document.getElementById('batch-quantity').value = lines.length;
+
+        lines.forEach(line => {
+          const parts = line.split('|').map(p => p.trim());
+          const code = parts[0] || '';
+          const name = parts[1] || '';
+
+          const newItem = document.createElement('div');
+          newItem.className = 'batch-item';
+          newItem.innerHTML = `
+            <input type="text" class="batch-name-input" placeholder="Название" value="${name.replace(/"/g, '&quot;')}">
+            <input type="text" class="batch-input" placeholder="Данные кода" value="${code.replace(/"/g, '&quot;')}">
+            <button class="btn btn-danger" onclick="removeBatchItem(this)">✕</button>
+          `;
+          document.getElementById('batch-items').appendChild(newItem);
+        });
+
+        e.target.value = '';
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    function addBatchItem() {
+      const batchItems = document.getElementById('batch-items');
+      const newItem = document.createElement('div');
+      newItem.className = 'batch-item';
+      newItem.innerHTML = `
+        <input type="text" class="batch-name-input" placeholder="Название">
+        <input type="text" class="batch-input" placeholder="Данные кода">
+        <button class="btn btn-danger" onclick="removeBatchItem(this)">✕</button>
+      `;
+      batchItems.appendChild(newItem);
+    }
+
+    function addBatchItemSilent(name = '', value = '') {
+      const batchItems = document.getElementById('batch-items');
+      const newItem = document.createElement('div');
+      newItem.className = 'batch-item';
+      newItem.innerHTML = `
+        <input type="text" class="batch-name-input" placeholder="Название" value="${name.replace(/"/g, '&quot;')}">
+        <input type="text" class="batch-input" placeholder="Данные кода" value="${value.replace(/"/g, '&quot;')}">
+        <button class="btn btn-danger" onclick="removeBatchItem(this)">✕</button>
+      `;
+      batchItems.appendChild(newItem);
+    }
+
+    function removeBatchItem(button) {
+      const item = button.parentNode;
+      item.remove();
+      const currentCount = document.querySelectorAll('.batch-item').length;
+      document.getElementById('batch-quantity').value = currentCount || 1;
+    }
+
+    function updateBatchItems() {
+      if (!isBatchMode) return;
+      const count = parseInt(document.getElementById('batch-quantity').value) || 1;
+      const batchItems = document.getElementById('batch-items');
+      const currentItems = batchItems.querySelectorAll('.batch-item');
+      const currentCount = currentItems.length;
+
+      if (count > currentCount) {
+        for (let i = currentCount; i < count; i++) {
+          addBatchItemSilent();
+        }
+      } else if (count < currentCount) {
+        for (let i = currentCount - 1; i >= count; i--) {
+          currentItems[i].remove();
+        }
+      }
+    }
+
+    function formatGS1Data(text) {
+      let formattedText = '';
+      let i = 0;
+      while (i < text.length) {
+        if (i + 2 <= text.length) {
+          let ai = text.substr(i, 2);
+          let dataLength;
+          switch (ai) {
+            case '01': dataLength = 14; break;
+            case '11': dataLength = 6; break;
+            case '21': dataLength = text.length - i - 2; break;
+            default: dataLength = 0;
+          }
+          if (dataLength > 0 && i + 2 + dataLength <= text.length) {
+            let data = text.substr(i + 2, dataLength);
+            formattedText += `(${ai})${data}`;
+            i += 2 + dataLength;
+          } else {
+            formattedText += text.substr(i);
+            i = text.length;
+          }
+        } else {
+          formattedText += text.substr(i);
+          i = text.length;
+        }
+      }
+      return formattedText;
+    }
+
+    function formatTextForDisplay(text, mode) {
+      if (mode === 'gs1-128') {
+        let formattedText = formatGS1Data(text);
+        formattedText = formattedText.replace(/\((\d{2})\)/g, '($1) ');
+        return formattedText.trim();
+      } else {
+        return text;
+      }
+    }
+
+    async function generateCodeImage(text, mode, targetSize = 320) {
+      const canvas = document.createElement('canvas');
+      canvas.width = targetSize;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const processedText = mode === 'gs1-128' ? formatGS1Data(text) : text;
+
+      try {
+        await ensureBwipLoaded();
+        let options = {
+          bcid: mode,
+          text: processedText,
+          scale: 3,
+          includetext: false,
+          backgroundcolor: 'FFFFFF',
+        };
+
+        if (mode === 'gs1-128') {
+          options.height = 10;
+          canvas.height = 100;
+        } else {
+          canvas.height = targetSize;
+        }
+
+        bwipjs.toCanvas(canvas, options);
+        return canvas;
+      } catch (localErr) {
+        console.warn('Локальный рендеринг недоступен, применяем Web API фоллбэк:', localErr);
+      }
+
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        const params = new URLSearchParams({
+          bcid: mode,
+          text: processedText,
+          scale: '3',
+          backgroundcolor: 'FFFFFF'
+        });
+        if (mode === 'gs1-128') {
+          params.append('height', '10');
+        }
+
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas);
+        };
+        img.onerror = () => {
+          reject(new Error('Не удалось сгенерировать код.'));
+        };
+        img.src = `https://bwipjs-api.metafloor.com/?${params.toString()}`;
+      });
+    }
+
+    async function generateCode() {
+      const container = document.getElementById('qrcode-container');
+      container.innerHTML = '';
+
+      if (isBatchMode) {
+        const batchInputs = document.querySelectorAll('.batch-input');
+        const batchNames = document.querySelectorAll('.batch-name-input');
+        const inputs = Array.from(batchInputs).map(input => input.value.trim()).filter(value => value);
+
+        if (inputs.length === 0) {
+          showNotification('Добавьте данные для генерации!', true);
+          return;
+        }
+
+        const hasIndividualName = Array.from(batchNames)
+          .slice(0, inputs.length)
+          .some(nameInput => nameInput.value.trim() !== '');
+
+        const commonName = document.getElementById('batch-code-name-input').value.trim();
+
+        for (let index = 0; index < inputs.length; index++) {
+          const text = inputs[index];
+          try {
+            const canvas = await generateCodeImage(text, currentMode, 300);
+            const img = new Image();
+            img.src = canvas.toDataURL('image/png');
+            img.alt = 'Code';
+
+            const codeItem = document.createElement('div');
+            codeItem.className = 'code-item';
+
+            let finalName = '';
+            if (hasIndividualName) {
+              finalName = batchNames[index] ? batchNames[index].value.trim() : '';
+            } else {
+              finalName = commonName;
+            }
+
+            if (finalName) {
+              const codeTitle = document.createElement('div');
+              codeTitle.className = 'code-title';
+              codeTitle.textContent = finalName;
+              codeItem.appendChild(codeTitle);
+            }
+
+            const codeImage = document.createElement('div');
+            codeImage.className = 'code-image';
+            codeImage.appendChild(img);
+
+            const codeText = document.createElement('div');
+            codeText.className = 'code-text';
+            codeText.textContent = formatTextForDisplay(text, currentMode);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn';
+            copyBtn.style.padding = '6px 14px';
+            copyBtn.style.fontSize = '0.8rem';
+            copyBtn.textContent = '📋 Скопировать';
+            copyBtn.onclick = () => copyCodeToClipboard(canvas, text, finalName);
+
+            codeItem.appendChild(codeImage);
+            codeItem.appendChild(codeText);
+            codeItem.appendChild(copyBtn);
+
+            container.appendChild(codeItem);
+          } catch (e) {
+            console.error(e);
+            showNotification(`Ошибка кода ${index + 1}: ${e.message || e}`, true);
+          }
+        }
+      } else {
+        const text = document.getElementById('text-input').value.trim();
+        if (!text) {
+          showNotification('Введите данные!', true);
+          return;
+        }
+
+        const singleName = document.getElementById('single-code-name-input').value.trim();
+
+        try {
+          const canvas = await generateCodeImage(text, currentMode, 320);
+          const img = new Image();
+          img.src = canvas.toDataURL('image/png');
+          img.alt = 'Code';
+
+          const codeItem = document.createElement('div');
+          codeItem.className = 'code-item';
+
+          if (singleName) {
+            const codeTitle = document.createElement('div');
+            codeTitle.className = 'code-title';
+            codeTitle.textContent = singleName;
+            codeItem.appendChild(codeTitle);
+          }
+
+          const codeImage = document.createElement('div');
+          codeImage.className = 'code-image';
+          codeImage.appendChild(img);
+
+          const codeText = document.createElement('div');
+          codeText.className = 'code-text';
+          codeText.textContent = formatTextForDisplay(text, currentMode);
+
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'btn';
+          copyBtn.style.padding = '6px 14px';
+          copyBtn.style.fontSize = '0.8rem';
+          copyBtn.textContent = '📋 Скопировать';
+          copyBtn.onclick = () => copyCodeToClipboard(canvas, text, singleName);
+
+          codeItem.appendChild(codeImage);
+          codeItem.appendChild(codeText);
+          codeItem.appendChild(copyBtn);
+
+          container.appendChild(codeItem);
+        } catch (e) {
+          console.error(e);
+          if (currentMode === 'gs1-128') {
+            showNotification('Ошибка GS1-128: проверьте формат данных', true);
+          } else {
+            showNotification('Ошибка: ' + (e.message || e), true);
+          }
+        }
+      }
+
+      document.getElementById('download-btn').disabled = false;
+      document.getElementById('print-btn').disabled = false;
+      document.getElementById('label-print-btn').disabled = false;
+      document.getElementById('save-session-btn').classList.remove('hidden');
+    }
+
+    function copyCodeToClipboard(canvas, text, codeName) {
+      try {
+        const textForDisplay = formatTextForDisplay(text, currentMode);
+        const borderedCanvas = document.createElement('canvas');
+        borderedCanvas.width = Math.max(canvas.width + 40, 400);
+        borderedCanvas.height = canvas.height + (codeName ? 100 : 70);
+        const borderedCtx = borderedCanvas.getContext('2d');
+        borderedCtx.fillStyle = '#FFFFFF';
+        borderedCtx.fillRect(0, 0, borderedCanvas.width, borderedCanvas.height);
+        if (codeName) {
+          borderedCtx.fillStyle = '#000000';
+          borderedCtx.font = 'bold 14px JetBrains Mono, monospace';
+          borderedCtx.textAlign = 'center';
+          borderedCtx.fillText(codeName, borderedCanvas.width / 2, 20);
+        }
+        borderedCtx.drawImage(canvas, 20, codeName ? 30 : 20);
+        borderedCtx.fillStyle = '#000000';
+        borderedCtx.font = '12px JetBrains Mono, monospace';
+        borderedCtx.textAlign = 'center';
+        borderedCtx.fillText(textForDisplay, borderedCanvas.width / 2, canvas.height + (codeName ? 60 : 50));
+        borderedCanvas.toBlob(blob => {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+            .then(() => showNotification('Код скопирован в буфер!'))
+            .catch(e => showNotification('Ошибка копирования: ' + (e.message || e), true));
+        }, 'image/png');
+      } catch (e) {
+        showNotification('Ошибка копирования: ' + (e.message || e), true);
+      }
+    }
+
+    function downloadPNG() {
+      const items = document.querySelectorAll('.code-item');
+      if (items.length === 0) {
+        showNotification('Нет кодов!', true);
+        return;
+      }
+      items.forEach((item, i) => {
+        const img = item.querySelector('img');
+        const title = item.querySelector('.code-title')?.textContent || `${currentMode}_${i+1}`;
+        const a = document.createElement('a');
+        a.download = `${title}_${Date.now()}.png`;
+        a.href = img.src;
+        a.click();
+      });
+    }
+
+    function printCode() {
+      const codeItems = document.querySelectorAll('.code-item');
+      if (codeItems.length === 0) {
+        showNotification('Нет кодов для печати!', true);
+        return;
+      }
+
+      let pagesHtml = '';
+
+      codeItems.forEach((item) => {
+        const img = item.querySelector('img');
+        const text = item.querySelector('.code-text').textContent;
+        const title = item.querySelector('.code-title')?.textContent || '';
+        const isGS1 = currentMode === 'gs1-128';
+
+        const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        pagesHtml += `
+          <div style="
+            width: 210mm;
+            height: 297mm;
+            padding: 15mm;
+            box-sizing: border-box;
+            page-break-after: always;
+            display: block;
+            overflow: hidden;
+          ">
+            <div style="
+              width: 100%;
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              text-align: center;
+              font-family: Arial, sans-serif;
+              color: black;
+            ">
+              ${safeTitle ? `<div style="
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 12px;
+                word-wrap: break-word;
+                word-break: break-word;
+                white-space: pre-wrap;
+                line-height: 1.3;
+                max-height: 60px;
+                overflow: hidden;
+              ">${safeTitle}</div>` : ''}
+              <img src="${img.src}" alt="Code" style="
+                ${isGS1
+                  ? 'width: 90%; max-height: 100px; height: auto;'
+                  : 'max-width: 180px; max-height: 180px;'}
+                image-rendering: pixelated;
+                display: block;
+              ">
+              <div style="
+                font-size: 12px;
+                margin-top: 12px;
+                word-break: break-all;
+                max-width: 90%;
+                line-height: 1.3;
+                color: black;
+              ">${safeText}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      const lastBreakIndex = pagesHtml.lastIndexOf('page-break-after: always;');
+      if (lastBreakIndex !== -1) {
+        pagesHtml = pagesHtml.substring(0, lastBreakIndex) + 'page-break-after: auto;' + pagesHtml.substring(lastBreakIndex + 'page-break-after: always;'.length);
+      }
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        showNotification('Разрешите всплывающие окна для печати!', true);
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            @page { size: A4 portrait; margin: 0; }
+            body { margin: 0; padding: 0; background: white; }
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body>
+          ${pagesHtml}
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      printWindow.onload = () => {
+        printWindow.focus();
+        printWindow.print();
+      };
+    }
+
+    function printLabel() {
+      const codeItems = document.querySelectorAll('.code-item');
+      if (codeItems.length === 0) {
+        showNotification('Нет кодов для печати!', true);
+        return;
+      }
+
+      let widthMm = parseFloat(document.getElementById('label-width').value) || 100;
+      let heightMm = parseFloat(document.getElementById('label-height').value) || 50;
+
+      const widthIn = (widthMm / 25.4).toFixed(2);
+      const heightIn = (heightMm / 25.4).toFixed(2);
+
+      let printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Этикетка</title>
+          <style>
+            @page {
+              size: ${widthIn}in ${heightIn}in;
+              margin: 0;
+            }
+            body {
+              margin: 0;
+              padding: 5mm;
+              background: white;
+              font-family: Arial, sans-serif;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+            }
+            .title {
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 8px;
+              color: #000;
+              word-wrap: break-word;
+              word-break: break-word;
+              text-align: center;
+            }
+            .code {
+              max-width: 90%;
+              max-height: 60%;
+              image-rendering: pixelated;
+            }
+            .text {
+              font-size: 10px;
+              color: #000;
+              margin-top: 6px;
+              text-align: center;
+              word-break: break-all;
+            }
+          </style>
+        </head>
+        <body>
+      `;
+
+      codeItems.forEach((item) => {
+        const img = item.querySelector('img');
+        const text = item.querySelector('.code-text').textContent;
+        const title = item.querySelector('.code-title') ? item.querySelector('.code-title').textContent : '';
+
+        const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        printContent += `<div>`;
+        if (title) printContent += `<div class="title">${safeTitle}</div>`;
+        printContent += `
+          <img class="code" src="${img.src}" alt="Code">
+          <div class="text">${safeText}</div>
+        </div>`;
+      });
+
+      printContent += `</body></html>`;
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        showNotification('Разрешите всплывающие окна для печати этикеток!', true);
+        return;
+      }
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+
+    function showNotification(message, isError = false) {
+      const n = document.getElementById('notification');
+      n.textContent = message;
+      n.classList.add('show');
+      n.style.borderColor = isError ? 'rgba(255, 71, 87, 0.4)' : 'rgba(0, 242, 254, 0.4)';
+      n.style.color = isError ? '#ff6b81' : 'var(--accent)';
+      setTimeout(() => n.classList.remove('show'), 3000);
+    }
+
+    document.getElementById('text-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') generateCode();
+    });
+
+    const saveModal = document.getElementById('save-modal');
+    const saveFilenameInput = document.getElementById('save-filename-input');
+
+    function openSaveModal() {
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+      saveFilenameInput.value = `codes_backup_${dateStr}_${timeStr}`;
+      saveModal.classList.add('active');
+      setTimeout(() => saveFilenameInput.select(), 100);
+    }
+
+    function closeSaveModal() {
+      saveModal.classList.remove('active');
+    }
+
+    saveModal.addEventListener('click', (e) => {
+      if (e.target === saveModal) closeSaveModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && saveModal.classList.contains('active')) {
+        closeSaveModal();
+      }
+    });
+
+    saveFilenameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') confirmSaveToFile();
+    });
+
+    function confirmSaveToFile() {
+      let filename = saveFilenameInput.value.trim();
+      if (!filename) {
+        filename = 'codes_backup';
+      }
+      if (!filename.toLowerCase().endsWith('.json')) {
+        filename += '.json';
+      }
+
+      const sessionData = {
+        version: '1.0',
+        savedAt: new Date().toISOString(),
+        mode: currentMode,
+        isBatchMode: isBatchMode,
+        labelSettings: {
+          preset: document.getElementById('label-size-preset').value,
+          width: document.getElementById('label-width').value,
+          height: document.getElementById('label-height').value
+        }
+      };
+
+      if (!isBatchMode) {
+        sessionData.single = {
+          code: document.getElementById('text-input').value,
+          name: document.getElementById('single-code-name-input').value
+        };
+      } else {
+        const batchItems = [];
+        const items = document.querySelectorAll('.batch-item');
+        items.forEach(item => {
+          batchItems.push({
+            name: item.querySelector('.batch-name-input') ? item.querySelector('.batch-name-input').value : '',
+            code: item.querySelector('.batch-input') ? item.querySelector('.batch-input').value : ''
+          });
+        });
+
+        sessionData.batch = {
+          commonName: document.getElementById('batch-code-name-input').value,
+          quantity: document.getElementById('batch-quantity').value,
+          items: batchItems
+        };
+      }
+
+      const jsonStr = JSON.stringify(sessionData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+
+      closeSaveModal();
+      showNotification(`Файл «${filename}» успешно сохранён!`);
+    }
+
+    document.getElementById('load-session-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const data = JSON.parse(event.target.result);
+
+          if (data.mode) {
+            setMode(data.mode);
+          }
+
+          if (data.labelSettings) {
+            const presetSelect = document.getElementById('label-size-preset');
+            presetSelect.value = data.labelSettings.preset || 'custom';
+            document.getElementById('label-width').value = data.labelSettings.width || 100;
+            document.getElementById('label-height').value = data.labelSettings.height || 50;
+            const customInputs = document.getElementById('custom-size-inputs');
+            if (presetSelect.value === 'custom') {
+              customInputs.style.display = 'flex';
+            } else {
+              customInputs.style.display = 'none';
+            }
+          }
+
+          const targetIsBatch = Boolean(data.isBatchMode);
+          applyBatchMode(targetIsBatch);
+
+          if (!targetIsBatch) {
+            document.getElementById('text-input').value = data.single?.code || '';
+            document.getElementById('single-code-name-input').value = data.single?.name || '';
+          } else {
+            document.getElementById('batch-code-name-input').value = data.batch?.commonName || '';
+            const items = data.batch?.items || [];
+            document.getElementById('batch-quantity').value = items.length || data.batch?.quantity || 1;
+
+            const container = document.getElementById('batch-items');
+            container.innerHTML = '';
+            items.forEach(item => {
+              addBatchItemSilent(item.name || '', item.code || '');
+            });
+            if (items.length === 0) {
+              updateBatchItems();
+            }
+          }
+
+          showNotification('Данные загружены! Нажмите «Сгенерировать»');
+        } catch (err) {
+          console.error(err);
+          showNotification('Ошибка: файл повреждён или не является JSON', true);
+        } finally {
+          e.target.value = '';
+        }
+      };
+
+      reader.readAsText(file, 'UTF-8');
+    });
+  </script>
+</body>
+</html>
